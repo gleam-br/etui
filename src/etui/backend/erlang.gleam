@@ -109,8 +109,8 @@ fn init_terminal(mouse: Bool) -> Result(ErlangTerminalState, Error) {
       enter_raw_ffi()
       set_raw_state(True)
       let #(cols, rows) = case window_size_ffi() {
-        Ok(#(c, r)) -> #(c, r)
-        Error(_) -> #(80, 24)
+        Ok(#(c, r)) -> #(c - 1, r)
+        Error(_) -> #(79, 24)
       }
       install_sigint_cleanup_ffi(fn() { terminal_cleanup() })
       Ok(ErlangTerminalState(
@@ -144,12 +144,12 @@ fn poll_input(
   }
   case window_size_ffi() {
     Ok(#(c, r)) ->
-      case c == state.cols && r == state.rows {
+      case c - 1 == state.cols && r == state.rows {
         True -> Ok(#(input_event, state))
         False ->
           Ok(#(
-            backend.Resize(c, r),
-            ErlangTerminalState(..state, cols: c, rows: r),
+            backend.Resize(c - 1, r),
+            ErlangTerminalState(..state, cols: c - 1, rows: r),
           ))
       }
     Error(_) -> Ok(#(input_event, state))
@@ -160,8 +160,8 @@ fn get_terminal_size(
   state: ErlangTerminalState,
 ) -> Result(#(TerminalSize, ErlangTerminalState), Error) {
   case window_size_ffi() {
-    Ok(#(w, h)) -> Ok(#(backend.TerminalSize(width: w, height: h), state))
-    Error(_) -> Ok(#(backend.TerminalSize(width: 80, height: 24), state))
+    Ok(#(w, h)) -> Ok(#(backend.TerminalSize(width: w - 1, height: h), state))
+    Error(_) -> Ok(#(backend.TerminalSize(width: 79, height: 24), state))
   }
 }
 
