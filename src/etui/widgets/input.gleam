@@ -14,6 +14,7 @@ import etui/geometry
 import etui/style
 import etui/text
 import gleam/string
+import gleam/int
 
 // ─────────────────────────────────────────────────────────────────
 // Types
@@ -228,8 +229,16 @@ pub fn render(
         True -> widget.prompt <> value_display
         False -> widget.prompt <> widget.placeholder
       }
-      let truncated = text.truncate(display_text, area.size.width - 1, "")
-      let padded = text.pad_right(truncated, area.size.width)
+      let c = text.cell_width(widget.prompt) + state.cursor
+      let w_avail = int.max(1, area.size.width)
+      let view_start = case c >= w_avail {
+        True -> c - w_avail + 1
+        False -> 0
+      }
+      let prefix = text.truncate(display_text, view_start, "")
+      let suffix = string.drop_start(display_text, string.length(prefix))
+      let truncated = text.truncate(suffix, w_avail, "")
+      let padded = text.pad_right(truncated, w_avail)
       let modifier = case has_value {
         True -> style.bold()
         False -> style.none()
