@@ -13,8 +13,8 @@ import etui/buffer
 import etui/geometry
 import etui/style
 import etui/text
-import gleam/string
 import gleam/int
+import gleam/string
 
 // ─────────────────────────────────────────────────────────────────
 // Types
