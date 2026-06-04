@@ -20,6 +20,7 @@ enter_raw() ->
 %% We entered through shell:start_interactive({noshell, raw}), so restore the
 %% shell reader back to cooked mode as well; stty alone is not symmetric.
 exit_raw() ->
+    stop_reader(),
     drain_input(50),
     catch shell:start_interactive({noshell, cooked}),
     catch io:setopts(user, [{echo, true}, {binary, false}]),
@@ -274,22 +275,32 @@ window_size() ->
             {error, could_not_get_window_size}
     end.
 
-%% Non-blocking read via io:get_chars (routed through user_drv's raw-mode reader).
+%% Non-blocking read via persistent actor.
 read_with_timeout(TimeoutMs) ->
-    read_io_timeout(TimeoutMs).
-
-read_io_timeout(TimeoutMs) ->
-    Self = self(),
-    Ref = erlang:make_ref(),
-    Pid = spawn(fun() ->
-        Raw = io:get_chars("", 128),
-        Self ! {Ref, input, to_binary(Raw)}
-    end),
+    ensure_reader(self()),
     receive
-        {Ref, input, Bin} -> {ok, Bin}
+        {etui_input, Bin} -> {ok, Bin}
     after TimeoutMs ->
-        exit(Pid, kill),
         {error, nil}
+    end.
+
+ensure_reader(Owner) ->
+    case erlang:whereis(etui_kbd_reader) of
+        undefined ->
+            Pid = spawn(fun() -> reader_loop(Owner) end),
+            catch erlang:register(etui_kbd_reader, Pid);
+        _ -> ok
+    end.
+
+reader_loop(Owner) ->
+    Raw = io:get_chars("", 128),
+    Owner ! {etui_input, to_binary(Raw)},
+    reader_loop(Owner).
+
+stop_reader() ->
+    case erlang:whereis(etui_kbd_reader) of
+        undefined -> ok;
+        Pid -> exit(Pid, kill)
     end.
 
 to_binary(Raw) ->
