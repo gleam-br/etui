@@ -2,6 +2,21 @@
 
 All notable changes to étui are listed here.
 
+## 1.0.1 - 2026-06-06
+
+### Fixed
+
+- **Keyboard I/O dropped keys (#2, #4):** replaced spawn/kill polling loop in
+  `etui_terminal_ffi.erl` with persistent `etui_kbd_reader` actor. Reader
+  blocks on `io:get_chars` and forwards `{etui_input, Bin}` to owner.
+  Eliminates dropped keys and TTY lock contention in 60FPS loops.
+  Thanks [@salespaulo](https://github.com/salespaulo).
+- **Input widget horizontal scroll (#3, #5):** removed hardcoded `- 2`
+  column margin in `widgets/input` truncation and cursor tracking. Uses
+  full `area.size.width` via `int.max(1, area.size.width)`. Cursor no
+  longer jumps prematurely; widget fills assigned cells.
+  Thanks [@salespaulo](https://github.com/salespaulo).
+
 ## 1.0.0 - 2026-05-27
 
 First public release.
